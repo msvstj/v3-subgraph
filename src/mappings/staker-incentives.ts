@@ -60,8 +60,8 @@ export function handleTokenStaked(event: TokenStaked): void {
   let incentive = Incentive.load(incentiveId);
 
   if (position !== null && incentive !== null) {
-    position.incentives.push(event.params.incentiveId.toHex());
-    incentive.positions.push(event.params.tokenId.toHex());
+    position.incentives.push(incentiveId);
+    incentive.positions.push(tokenId);
     position.save();
     incentive.save();
   }
