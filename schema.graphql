@@ -224,6 +224,10 @@ type Position @entity {
   # vars needed for fee computation
   feeGrowthInside0LastX128: BigInt!
   feeGrowthInside1LastX128: BigInt!
+  # array of incentive pointers where the position is staked
+  incentives: [Incentive]! @relation
+  # token depositor in the staking contract
+  depositor: Bytes
 }
 
 type PositionSnapshot @entity {
@@ -650,4 +654,28 @@ type TokenHourData @entity {
   low: BigDecimal!
   # close price USD
   close: BigDecimal!
+}
+type Incentive @entity {
+  # incentive ID
+  id: ID!
+  # creation
+  createdAtTimestamp: BigInt!
+  # block incentive was created at
+  createdAtBlockNumber: BigInt!
+  # pool of incentive 
+  pool: Pool!
+  # incentive start time
+  startTime: BigInt!
+  # incentive end time
+  endTime: BigInt!
+  # refundee wallet address
+  refundee: Bytes!
+  # reward token
+  rewardToken: Token!
+  # reward amount
+  reward: BigInt!
+  # pointers of staked positions
+  positions: [Position]! @relation
+  # incentive ended by the owner
+  ended: Boolean!
 }

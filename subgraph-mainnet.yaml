@@ -3,16 +3,19 @@ description: Uniswap is a decentralized protocol for automated token exchange on
 repository: https://github.com/Uniswap/uniswap-v3-subgraph
 schema:
   file: ./schema.graphql
+graft:
+  base: QmPrb5mvZj3ycUugZgwLWCvK93jfXfhvfjRXrFk4tRmyCX
+  block: 14292820
 features:
   - nonFatalErrors
 dataSources:
   - kind: ethereum/contract
     name: Factory
-    network: goerli
+    network: mainnet
     source:
       address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
       abi: Factory
-      startBlock: 4734394
+      startBlock: 12369621
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4
@@ -37,11 +40,11 @@ dataSources:
           handler: handlePoolCreated
   - kind: ethereum/contract
     name: NonfungiblePositionManager
-    network: goerli
+    network: mainnet
     source:
       address: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
       abi: NonfungiblePositionManager
-      startBlock: 4734414
+      startBlock: 12369651
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4
@@ -68,51 +71,10 @@ dataSources:
           handler: handleCollect
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
-  - kind: ethereum/contract
-    name: UniswapV3Staker
-    network: goerli
-    source:
-      address: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
-      abi: Staker
-      startBlock: 5935287
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.4
-      language: wasm/assemblyscript
-      file: ./src/mappings/staker-incentives.ts
-      entities:
-        - Pool
-        - Token
-        - Incentive
-        - Position
-      abis:
-        - name: NonfungiblePositionManager
-          file: ./abis/NonfungiblePositionManager.json
-        - name: Pool
-          file: ./abis/pool.json
-        - name: Factory
-          file: ./abis/factory.json
-        - name: ERC20
-          file: ./abis/ERC20.json
-        - name: Staker
-          file: ./abis/staker.json
-      eventHandlers:
-        - event: DepositTransferred(indexed uint256,indexed address,indexed address)
-          handler: handleDepositTransferred
-        - event: IncentiveCreated(indexed address,indexed address,uint256,uint256,address,uint256)
-          handler: handleIncentiveCreated
-        - event: IncentiveEnded(indexed bytes32,uint256)
-          handler: handleIncentiveEnded
-        - event: RewardClaimed(indexed address,uint256)
-          handler: handleRewardClaimed
-        - event: TokenStaked(indexed uint256,indexed bytes32,uint128)
-          handler: handleTokenStaked
-        - event: TokenUnstaked(indexed uint256,indexed bytes32)
-          handler: handleTokenUnstaked
 templates:
   - kind: ethereum/contract
     name: Pool
-    network: goerli
+    network: mainnet
     source:
       abi: Pool
     mapping:
