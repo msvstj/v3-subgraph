@@ -31,6 +31,8 @@ export function handleIncentiveCreated(event: IncentiveCreated): void {
   }
 
   incentive.rewardToken = event.params.rewardToken.toHexString();
+  incentive.createdAtTimestamp = event.block.timestamp
+  incentive.createdAtBlockNumber = event.block.number
   incentive.pool = event.params.pool.toHexString();
   incentive.startTime = event.params.startTime;
   incentive.endTime = event.params.endTime;
