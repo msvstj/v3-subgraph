@@ -1,13 +1,20 @@
-import { ethereum, crypto } from '@graphprotocol/graph-ts';
+/* eslint-disable prefer-const */
+import { ethereum, crypto, log } from '@graphprotocol/graph-ts';
+import { Incentive, Position, Token } from '../types/schema';
+import { ZERO_BD, ZERO_BI } from '../utils/constants'
 import {
   DepositTransferred,
   IncentiveCreated,
   IncentiveEnded,
-  RewardClaimed,
   TokenStaked,
   TokenUnstaked,
 } from '../types/UniswapV3Staker/Staker';
-import { Incentive, Position } from '../types/schema';
+import { 
+  fetchTokenDecimals, 
+  fetchTokenName, 
+  fetchTokenSymbol, 
+  fetchTokenTotalSupply 
+} from '../utils/token';;
 
 export function handleIncentiveCreated(event: IncentiveCreated): void {
 
@@ -24,23 +31,53 @@ export function handleIncentiveCreated(event: IncentiveCreated): void {
 
   let incentiveId = crypto.keccak256(incentiveIdEncoded);
 
+  
+  let rewardToken = Token.load(event.params.rewardToken.toHexString());
   let incentive = Incentive.load(incentiveId.toHex());
+  
+  // in case there is no pool with reward token - create new token object
+  // factory.ts logic
+   if(rewardToken === null){
+    rewardToken = new Token(event.params.rewardToken.toHexString())
+    rewardToken.symbol = fetchTokenSymbol(event.params.rewardToken)
+    rewardToken.name = fetchTokenName(event.params.rewardToken)
+    rewardToken.totalSupply = fetchTokenTotalSupply(event.params.rewardToken)
+    let decimals = fetchTokenDecimals(event.params.rewardToken)
 
-  if (incentive == null) {
-    incentive = new Incentive(incentiveId.toHex());
+    // bail if we couldn't figure out the decimals
+    if (decimals === null) {
+      log.debug('mybug the decimal on reward token was null', [])
+      return
+    }
+    rewardToken.decimals = decimals
+    rewardToken.derivedETH = ZERO_BD
+    rewardToken.volume = ZERO_BD
+    rewardToken.volumeUSD = ZERO_BD
+    rewardToken.feesUSD = ZERO_BD
+    rewardToken.untrackedVolumeUSD = ZERO_BD
+    rewardToken.totalValueLocked = ZERO_BD
+    rewardToken.totalValueLockedUSD = ZERO_BD
+    rewardToken.totalValueLockedUSDUntracked = ZERO_BD
+    rewardToken.txCount = ZERO_BI
+    rewardToken.poolCount = ZERO_BI
+    rewardToken.whitelistPools = []
+    rewardToken.save()
   }
 
-  incentive.rewardToken = event.params.rewardToken.toHexString();
-  incentive.createdAtTimestamp = event.block.timestamp
-  incentive.createdAtBlockNumber = event.block.number
-  incentive.pool = event.params.pool.toHexString();
-  incentive.startTime = event.params.startTime;
-  incentive.endTime = event.params.endTime;
-  incentive.refundee = event.params.refundee;
-  incentive.reward = event.params.reward;
-  incentive.ended = false;
-  incentive.positions = [];
-  incentive.save();
+  if (incentive === null) {
+    incentive = new Incentive(incentiveId.toHex())
+    incentive.rewardToken = rewardToken.id
+    incentive.createdAtTimestamp = event.block.timestamp
+    incentive.createdAtBlockNumber = event.block.number
+    incentive.pool = event.params.pool.toHexString()
+    incentive.startTime = event.params.startTime
+    incentive.endTime = event.params.endTime
+    incentive.refundee = event.params.refundee
+    incentive.reward = event.params.reward
+    incentive.ended = false
+    incentive.positions = []
+    incentive.save()
+  }
 }
 
 export function handleIncentiveEnded(event: IncentiveEnded): void {
@@ -51,9 +88,8 @@ export function handleIncentiveEnded(event: IncentiveEnded): void {
   }
 }
 
-export function handleRewardClaimed(event: RewardClaimed): void {}
-
-//Adding incentives to the array.
+// adding incentives to the array.
+// current issue : circular reference.
 export function handleTokenStaked(event: TokenStaked): void {
   let tokenId = event.params.tokenId.toHex();
   let incentiveId = event.params.incentiveId.toHex();
@@ -62,14 +98,21 @@ export function handleTokenStaked(event: TokenStaked): void {
   let incentive = Incentive.load(incentiveId);
 
   if (position !== null && incentive !== null) {
-    position.incentives.push(incentiveId);
-    incentive.positions.push(tokenId);
-    position.save();
-    incentive.save();
-  }
+    let stakedIncentivesArray = position.incentives;
+    let stakedPositionsArray = incentive.positions;
 
+    stakedIncentivesArray.push(incentiveId);
+    stakedPositionsArray.push(tokenId);
+
+    position.incentives = stakedIncentivesArray
+    incentive.positions = stakedPositionsArray
+
+    position.save()
+    incentive.save()
+  }
 }
-//Removing incentive from the array.
+// removing incentive from the array.
+// current issue : circular reference.
 export function handleTokenUnstaked(event: TokenUnstaked): void {
   let tokenId = event.params.tokenId.toHex();
   let incentiveId = event.params.incentiveId.toHex();
@@ -78,14 +121,21 @@ export function handleTokenUnstaked(event: TokenUnstaked): void {
   let incentive = Incentive.load(incentiveId);
 
   if (position !== null && incentive !== null) {
-    let incentiveIdx = position.incentives.indexOf(incentiveId);
-    let positionIdx = incentive.positions.indexOf(tokenId);
+    let stakedIncentivesArray = position.incentives;
+    let stakedPositionsArray = incentive.positions;
+
+    let incentiveIdx = stakedIncentivesArray.indexOf(incentiveId);
+    let positionIdx = stakedPositionsArray.indexOf(tokenId);
 
     if(incentiveIdx !== -1 && positionIdx !== -1){
-      position.incentives.splice(incentiveIdx, 1);
-      incentive.positions.splice(positionIdx, 1);
-      position.save();
-      incentive.save();
+      stakedIncentivesArray.splice(incentiveIdx, 1)
+      stakedPositionsArray.splice(positionIdx, 1)
+
+      position.incentives = stakedIncentivesArray
+      incentive.positions = stakedPositionsArray
+
+      position.save()
+      incentive.save()
     }
   }
 }
@@ -97,8 +147,7 @@ export function handleDepositTransferred(event: DepositTransferred): void {
   // erc721 handler : msg.sender (or newOwner)
   // deposit transfer: msg.sender (or newOwner)
   if (position !== null) {
-    position.depositor = event.params.newOwner;
-    position.save();
+    position.depositor = event.params.newOwner
+    position.save()
   }
 }
-

@@ -106,8 +106,6 @@ dataSources:
           handler: handleIncentiveCreated
         - event: IncentiveEnded(indexed bytes32,uint256)
           handler: handleIncentiveEnded
-        - event: RewardClaimed(indexed address,uint256)
-          handler: handleRewardClaimed
         - event: TokenStaked(indexed uint256,indexed bytes32,uint128)
           handler: handleTokenStaked
         - event: TokenUnstaked(indexed uint256,indexed bytes32)

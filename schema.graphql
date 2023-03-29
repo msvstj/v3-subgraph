@@ -676,6 +676,6 @@ type Incentive @entity {
   reward: BigInt!
   # pointers of staked positions
   positions: [Position]! @relation
-  # incentive ended by the owner
+  # incentive ended to retrieve remaining tokens
   ended: Boolean!
 }

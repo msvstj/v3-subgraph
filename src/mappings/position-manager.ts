@@ -43,6 +43,7 @@ function getPosition(event: ethereum.Event, tokenId: BigInt): Position | null {
       position.transaction = loadTransaction(event).id
       position.feeGrowthInside0LastX128 = positionResult.value8
       position.feeGrowthInside1LastX128 = positionResult.value9
+      position.depositor = Address.fromString(ADDRESS_ZERO)
       position.incentives = []
     }
   }

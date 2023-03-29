@@ -5,7 +5,7 @@ Updates:
 ![img](https://ipfs.msvstj.com/ipfs/Qmb7LSFP1WZTbXNXJq9BxJ73xjVBVUpruz8V6oV2wfToxB)
 
 ### Issues and Notes
-- Circular references between Positions and Incentives (many-to-many relationship);
+- Circular references between Positions and Incentives (many-to-many relationship). Issue will be resolved;
 - Subgraph will be updated;
 - More networks pending.
 
