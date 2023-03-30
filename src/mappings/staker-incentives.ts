@@ -29,11 +29,8 @@ export function handleIncentiveCreated(event: IncentiveCreated): void {
     ethereum.Value.fromTuple(changetype<ethereum.Tuple>(incentiveIdTuple))
   )!;
 
-  let incentiveId = crypto.keccak256(incentiveIdEncoded);
-
-  
+  let incentiveId = crypto.keccak256(incentiveIdEncoded);  
   let rewardToken = Token.load(event.params.rewardToken.toHexString());
-  let incentive = Incentive.load(incentiveId.toHex());
   
   // in case there is no pool with reward token - create new token object
   // factory.ts logic
@@ -64,45 +61,41 @@ export function handleIncentiveCreated(event: IncentiveCreated): void {
     rewardToken.save()
   }
 
-  if (incentive === null) {
-    incentive = new Incentive(incentiveId.toHex())
-    incentive.rewardToken = rewardToken.id
-    incentive.createdAtTimestamp = event.block.timestamp
-    incentive.createdAtBlockNumber = event.block.number
-    incentive.pool = event.params.pool.toHexString()
-    incentive.startTime = event.params.startTime
-    incentive.endTime = event.params.endTime
-    incentive.refundee = event.params.refundee
-    incentive.reward = event.params.reward
-    incentive.ended = false
-    incentive.positions = []
+  let incentive = new Incentive(incentiveId.toHex());
+  incentive.rewardToken = rewardToken.id
+  incentive.createdAtTimestamp = event.block.timestamp
+  incentive.createdAtBlockNumber = event.block.number
+  incentive.pool = event.params.pool.toHexString()
+  incentive.startTime = event.params.startTime
+  incentive.endTime = event.params.endTime
+  incentive.refundee = event.params.refundee
+  incentive.reward = event.params.reward
+  incentive.ended = false
+  incentive.positions = []
+  incentive.save()
+  
+}
+
+export function handleIncentiveEnded(event: IncentiveEnded): void {
+  let incentive = Incentive.load(event.params.incentiveId.toHex())
+  if (incentive) {
+    incentive.ended = true
     incentive.save()
   }
 }
 
-export function handleIncentiveEnded(event: IncentiveEnded): void {
-  let incentive = Incentive.load(event.params.incentiveId.toHex());
-  if (incentive) {
-    incentive.ended = true;
-    incentive.save();
-  }
-}
-
 // adding incentives to the array.
-// current issue : circular reference.
+// current issue : circular reference
 export function handleTokenStaked(event: TokenStaked): void {
-  let tokenId = event.params.tokenId.toHex();
-  let incentiveId = event.params.incentiveId.toHex();
-
-  let position = Position.load(tokenId);
-  let incentive = Incentive.load(incentiveId);
+  let position = Position.load(event.params.tokenId.toString())
+  let incentive = Incentive.load(event.params.incentiveId.toHex())
 
   if (position !== null && incentive !== null) {
-    let stakedIncentivesArray = position.incentives;
-    let stakedPositionsArray = incentive.positions;
+    let stakedIncentivesArray = position.incentives
+    let stakedPositionsArray = incentive.positions
 
-    stakedIncentivesArray.push(incentiveId);
-    stakedPositionsArray.push(tokenId);
+    stakedIncentivesArray.push(incentive.id)
+    stakedPositionsArray.push(position.id)
 
     position.incentives = stakedIncentivesArray
     incentive.positions = stakedPositionsArray
@@ -114,18 +107,15 @@ export function handleTokenStaked(event: TokenStaked): void {
 // removing incentive from the array.
 // current issue : circular reference.
 export function handleTokenUnstaked(event: TokenUnstaked): void {
-  let tokenId = event.params.tokenId.toHex();
-  let incentiveId = event.params.incentiveId.toHex();
-
-  let position = Position.load(tokenId);
-  let incentive = Incentive.load(incentiveId);
+  let position = Position.load(event.params.tokenId.toString());
+  let incentive = Incentive.load(event.params.incentiveId.toHex());
 
   if (position !== null && incentive !== null) {
     let stakedIncentivesArray = position.incentives;
     let stakedPositionsArray = incentive.positions;
 
-    let incentiveIdx = stakedIncentivesArray.indexOf(incentiveId);
-    let positionIdx = stakedPositionsArray.indexOf(tokenId);
+    let incentiveIdx = stakedIncentivesArray.indexOf(incentive.id);
+    let positionIdx = stakedPositionsArray.indexOf(position.id);
 
     if(incentiveIdx !== -1 && positionIdx !== -1){
       stakedIncentivesArray.splice(incentiveIdx, 1)
@@ -139,14 +129,16 @@ export function handleTokenUnstaked(event: TokenUnstaked): void {
     }
   }
 }
-// Token owner is handled in other position event handlers.
+
+// new token owner is handled in other position event handlers.
 export function handleDepositTransferred(event: DepositTransferred): void {
-  let position = Position.load(event.params.tokenId.toHex());
-  // New depositor address in case of:
-  // withdraw: address(0) (or newOwner)
-  // erc721 handler : msg.sender (or newOwner)
+  let position = Position.load(event.params.tokenId.toString());
+
+  // new depositor address in case of:
+  // withdrawal: address(0) (or newOwner)
+  // erc721 transfer : msg.sender (or newOwner)
   // deposit transfer: msg.sender (or newOwner)
-  if (position !== null) {
+  if (position) {
     position.depositor = event.params.newOwner
     position.save()
   }

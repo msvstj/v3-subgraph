@@ -141,6 +141,7 @@ type Pool @entity {
   swaps: [Swap!]! @derivedFrom(field: "pool")
   collects: [Collect!]! @derivedFrom(field: "pool")
   ticks: [Tick!]! @derivedFrom(field: "pool")
+  incentives: [Incentive!]! @derivedFrom(field: "pool")
 }
 
 type Tick @entity {
@@ -225,7 +226,7 @@ type Position @entity {
   feeGrowthInside0LastX128: BigInt!
   feeGrowthInside1LastX128: BigInt!
   # array of incentive pointers where the position is staked
-  incentives: [Incentive]! @relation
+  incentives: [Incentive]!
   # token depositor in the staking contract
   depositor: Bytes
 }
@@ -675,7 +676,7 @@ type Incentive @entity {
   # reward amount
   reward: BigInt!
   # pointers of staked positions
-  positions: [Position]! @relation
+  positions: [Position]!
   # incentive ended to retrieve remaining tokens
   ended: Boolean!
 }
