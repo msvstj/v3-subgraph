@@ -1,6 +1,6 @@
 /* eslint-disable prefer-const */
 import { ethereum, crypto, log } from '@graphprotocol/graph-ts';
-import { Incentive, Position, Token } from '../types/schema';
+import { Incentive, Pool, Position, Token } from '../types/schema';
 import { ZERO_BD, ZERO_BI } from '../utils/constants'
 import {
   DepositTransferred,
@@ -14,9 +14,18 @@ import {
   fetchTokenName, 
   fetchTokenSymbol, 
   fetchTokenTotalSupply 
-} from '../utils/token';;
+} from '../utils/token';
 
 export function handleIncentiveCreated(event: IncentiveCreated): void {
+  let pool = Pool.load(event.address.toHexString())
+
+  // issue with some incentives that were created using V2 pairs instead of V3 pools
+  // e.g. in block 8389567 (goerli)
+  // incentive: 0x53c56102e86fb7802e03a607eceef2f14b7ca485
+  // in case pool does not exist in V3 subgraph - return without saving new entity.
+  if(pool == null){
+    return;
+  }
 
   let incentiveIdTuple: Array<ethereum.Value> = [
     ethereum.Value.fromAddress(event.params.rewardToken),
