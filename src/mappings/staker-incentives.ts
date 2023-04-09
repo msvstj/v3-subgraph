@@ -17,11 +17,11 @@ import {
 } from '../utils/token';
 
 export function handleIncentiveCreated(event: IncentiveCreated): void {
-  let pool = Pool.load(event.address.toHexString())
+  let pool = Pool.load(event.params.pool.toHexString())
 
   // issue with some incentives that were created using V2 pairs instead of V3 pools
   // e.g. in block 8389567 (goerli)
-  // incentive: 0x53c56102e86fb7802e03a607eceef2f14b7ca485
+  // incentive: 0x89114380d9fc6ac1c501e0b4fe3cf1613f0feb9aec7fd3092d20866f46a78adb
   // in case pool does not exist in V3 subgraph - return without saving new entity.
   if(pool == null){
     return;
