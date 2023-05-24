@@ -1,7 +1,6 @@
 /* eslint-disable prefer-const */
 import { ethereum, crypto, log } from '@graphprotocol/graph-ts';
 import { Incentive, Pool, Position, Token } from '../types/schema';
-import { ZERO_BD, ZERO_BI } from '../utils/constants'
 import {
   DepositTransferred,
   IncentiveCreated,
@@ -12,17 +11,15 @@ import {
 import { 
   fetchTokenDecimals, 
   fetchTokenName, 
-  fetchTokenSymbol, 
-  fetchTokenTotalSupply 
-} from '../utils/token';
+  fetchTokenSymbol} from '../utils/token';
 
 export function handleIncentiveCreated(event: IncentiveCreated): void {
-  let pool = Pool.load(event.address.toHexString())
+  let pool = Pool.load(event.params.pool.toHexString())
 
-  // issue with some incentives that were created using V2 pairs instead of V3 pools
-  // e.g. in block 8389567 (goerli)
-  // incentive: 0x53c56102e86fb7802e03a607eceef2f14b7ca485
-  // in case pool does not exist in V3 subgraph - return without saving new entity.
+  // // issue with some incentives that were created using V2 pairs instead of V3 pools
+  // // e.g. in block 8389567 (goerli)
+  // // incentive: 0x89114380d9fc6ac1c501e0b4fe3cf1613f0feb9aec7fd3092d20866f46a78adb
+  // // in case pool does not exist in V3 subgraph - return without saving new entity.
   if(pool == null){
     return;
   }
@@ -47,7 +44,6 @@ export function handleIncentiveCreated(event: IncentiveCreated): void {
     rewardToken = new Token(event.params.rewardToken.toHexString())
     rewardToken.symbol = fetchTokenSymbol(event.params.rewardToken)
     rewardToken.name = fetchTokenName(event.params.rewardToken)
-    rewardToken.totalSupply = fetchTokenTotalSupply(event.params.rewardToken)
     let decimals = fetchTokenDecimals(event.params.rewardToken)
 
     // bail if we couldn't figure out the decimals
@@ -56,17 +52,6 @@ export function handleIncentiveCreated(event: IncentiveCreated): void {
       return
     }
     rewardToken.decimals = decimals
-    rewardToken.derivedETH = ZERO_BD
-    rewardToken.volume = ZERO_BD
-    rewardToken.volumeUSD = ZERO_BD
-    rewardToken.feesUSD = ZERO_BD
-    rewardToken.untrackedVolumeUSD = ZERO_BD
-    rewardToken.totalValueLocked = ZERO_BD
-    rewardToken.totalValueLockedUSD = ZERO_BD
-    rewardToken.totalValueLockedUSDUntracked = ZERO_BD
-    rewardToken.txCount = ZERO_BI
-    rewardToken.poolCount = ZERO_BI
-    rewardToken.whitelistPools = []
     rewardToken.save()
   }
 
@@ -74,7 +59,7 @@ export function handleIncentiveCreated(event: IncentiveCreated): void {
   incentive.rewardToken = rewardToken.id
   incentive.createdAtTimestamp = event.block.timestamp
   incentive.createdAtBlockNumber = event.block.number
-  incentive.pool = event.params.pool.toHexString()
+  incentive.pool = pool.id
   incentive.startTime = event.params.startTime
   incentive.endTime = event.params.endTime
   incentive.refundee = event.params.refundee

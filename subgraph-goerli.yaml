@@ -8,11 +8,11 @@ features:
 dataSources:
   - kind: ethereum/contract
     name: Factory
-    network: mainnet
+    network: goerli
     source:
       address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
       abi: Factory
-      startBlock: 12369621
+      startBlock: 4734394
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4
@@ -37,11 +37,11 @@ dataSources:
           handler: handlePoolCreated
   - kind: ethereum/contract
     name: NonfungiblePositionManager
-    network: mainnet
+    network: goerli
     source:
       address: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
       abi: NonfungiblePositionManager
-      startBlock: 12369651
+      startBlock: 4734414
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4
@@ -64,11 +64,11 @@ dataSources:
           handler: handleTransfer
   - kind: ethereum/contract
     name: UniswapV3Staker
-    network: mainnet
+    network: goerli
     source:
       address: '0xe34139463bA50bD61336E0c446Bd8C0867c6fE65'
       abi: Staker
-      startBlock: 13709767
+      startBlock: 5935287
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4

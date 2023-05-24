@@ -3,19 +3,16 @@ description: Uniswap is a decentralized protocol for automated token exchange on
 repository: https://github.com/Uniswap/uniswap-v3-subgraph
 schema:
   file: ./schema.graphql
-graft:
-  base: QmPrb5mvZj3ycUugZgwLWCvK93jfXfhvfjRXrFk4tRmyCX
-  block: 14292820
 features:
   - nonFatalErrors
 dataSources:
   - kind: ethereum/contract
     name: Factory
-    network: mainnet
+    network: matic
     source:
       address: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
       abi: Factory
-      startBlock: 12369621
+      startBlock: 22757547
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4
@@ -40,11 +37,11 @@ dataSources:
           handler: handlePoolCreated
   - kind: ethereum/contract
     name: NonfungiblePositionManager
-    network: mainnet
+    network: matic
     source:
       address: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
       abi: NonfungiblePositionManager
-      startBlock: 12369651
+      startBlock: 22760586
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4
@@ -63,43 +60,44 @@ dataSources:
         - name: ERC20
           file: ./abis/ERC20.json
       eventHandlers:
-        - event: IncreaseLiquidity(indexed uint256,uint128,uint256,uint256)
-          handler: handleIncreaseLiquidity
-        - event: DecreaseLiquidity(indexed uint256,uint128,uint256,uint256)
-          handler: handleDecreaseLiquidity
-        - event: Collect(indexed uint256,address,uint256,uint256)
-          handler: handleCollect
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
-templates:
   - kind: ethereum/contract
-    name: Pool
-    network: mainnet
+    name: UniswapV3Staker
+    network: matic
     source:
-      abi: Pool
+      address: '0xe34139463bA50bD61336E0c446Bd8C0867c6fE65'
+      abi: Staker
+      startBlock: 22760705
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.4
       language: wasm/assemblyscript
-      file: ./src/mappings/core.ts
+      file: ./src/mappings/staker-incentives.ts
       entities:
         - Pool
         - Token
+        - Incentive
+        - Position
       abis:
+        - name: NonfungiblePositionManager
+          file: ./abis/NonfungiblePositionManager.json
         - name: Pool
           file: ./abis/pool.json
         - name: Factory
           file: ./abis/factory.json
         - name: ERC20
           file: ./abis/ERC20.json
+        - name: Staker
+          file: ./abis/staker.json
       eventHandlers:
-        - event: Initialize(uint160,int24)
-          handler: handleInitialize
-        - event: Swap(indexed address,indexed address,int256,int256,uint160,uint128,int24)
-          handler: handleSwap
-        - event: Mint(address,indexed address,indexed int24,indexed int24,uint128,uint256,uint256)
-          handler: handleMint
-        - event: Burn(indexed address,indexed int24,indexed int24,uint128,uint256,uint256)
-          handler: handleBurn
-        - event: Flash(indexed address,indexed address,uint256,uint256,uint256,uint256)
-          handler: handleFlash
+        - event: DepositTransferred(indexed uint256,indexed address,indexed address)
+          handler: handleDepositTransferred
+        - event: IncentiveCreated(indexed address,indexed address,uint256,uint256,address,uint256)
+          handler: handleIncentiveCreated
+        - event: IncentiveEnded(indexed bytes32,uint256)
+          handler: handleIncentiveEnded
+        - event: TokenStaked(indexed uint256,indexed bytes32,uint128)
+          handler: handleTokenStaked
+        - event: TokenUnstaked(indexed uint256,indexed bytes32)
+          handler: handleTokenUnstaked
